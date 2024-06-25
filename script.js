@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         FilmFreeway SCRAPER
 // @namespace    jonnycp
-// @version      2024-06-24
+// @version      1.0
 // @description  Ottieni i dati di tutti i recensori di un festival e scaricali in csv
-// @author       You
+// @author       Jonathan Caputo
 // @match        https://filmfreeway.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=filmfreeway.com
 // @grant        none
@@ -87,41 +87,42 @@ const getInfoFromAuthor = async (linkAuthor) => {
   const d_2 = document.createRange().createContextualFragment(d_1);
   let nome = d_2.querySelector("div.Header-profileName")
     ? d_2.querySelector("div.Header-profileName").innerHTML
-    : "";
+    : ".";
   let title = d_2.querySelector("div.Header-profileTitle")
     ? d_2.querySelector("div.Header-profileTitle").innerHTML
-    : "";
-  let bio = d_2.querySelector("div.Header-Profile-introCopy")
-    ? d_2.querySelector("div.Header-Profile-introCopy").innerHTML
-    : "";
+    : ".";
+  let bio = d_2.querySelector("div.Profile-introCopy")
+    ? d_2.querySelector("div.Profile-introCopy").innerHTML
+    : ".";
   let email = d_2.querySelector("meta[itemprop='email']")
     ? d_2.querySelector("meta[itemprop='email']").content
-    : "";
+    : ".";
   let bd = d_2.querySelector("div[itemprop='birthDate']")
-    ? d_2.querySelector("div[itemprop='birthDate']").content
-    : "";
-  let city = "";
+    ? d_2.querySelector("div[itemprop='birthDate']").innerHTML
+    : ".";
+  let city = ".";
   let labels = ["Current City", "Hometown", "Birth City"];
   for (let label of labels) {
     let labelElement = Array.from(
-      document.querySelectorAll(".Grid .TextStyle-medium")
+        d_2.querySelectorAll(".Grid .TextStyle-medium")
     ).find((el) => el.textContent === label);
     let cityElement = labelElement
       ? labelElement.parentElement.nextElementSibling
       : null;
-    city = cityElement ? cityElement.textContent : null;
+    city = cityElement ? cityElement.textContent : ".";
 
-    if (city) break;
+    if (city != ".") break;
   }
+
   return {
     name: nome.split(" ").slice(0, -1).join(" "),
     lastName: nome.split(" ").slice(-1).join(" "),
     email: email,
-    title: title,
+    title: title || ".",
     city: city,
-    bio: bio,
+    bio: bio || ".",
     birthday: bd,
-    author: linkAuthor,
+    author: "https://filmfreeway.com"+linkAuthor,
     festival: window.location.href,
   };
 };
@@ -156,7 +157,7 @@ const toCSVDownload = (data) => {
   let header = [
     "Nome",
     "Cognome",
-    "email",
+    "Email",
     "Titolo",
     "Citta",
     "Bio",
@@ -164,12 +165,14 @@ const toCSVDownload = (data) => {
     "Link",
     "Festival",
   ];
-  csvContent += header.join(",") + "\n";
+  csvContent += header.join("=") + "\n";
 
-  console.log(data);
   for (let row of data) {
     let values = Object.values(row);
-    csvContent += values.join(",") + "\n";
+    if(values[2] != "."){
+        values[5] = values[5].replace(/\n/g, ""); 
+        csvContent += values.join("=") + "\n";
+    }
   }
 
   let blob = new Blob([csvContent], { type: "text/csv" });
